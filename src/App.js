@@ -9,6 +9,9 @@ import ReactDOM from 'react-dom';
 import Xarrow from 'react-xarrows/lib';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend'
+import { prospectInfo } from './constants';
+import Prospects from './Prospects';
+import { Card } from '@material-ui/core';
 
 const buttonStyle = {
   position: "relative",
@@ -23,37 +26,37 @@ const buttonStyle = {
   margin: "10px"
 }
 
-const prospectInfo = [
-  {firstName: 'Leanne',
-   lastName: 'Graham',
-   prospectId: "1",
-   checked: false},
-   {firstName: 'Ervin',
-   lastName: 'Howell',
-   prospectId: "2",
-   checked: false},
-   {firstName: 'Clementine',
-   lastName: 'Bauch',
-   prospectId: "3",
-   checked: false},
-   {firstName: 'Patricia',
-   lastName: 'Lebsack',
-   prospectId: "4",
-   checked: false},
-   {firstName: 'Chelsey',
-   lastName: 'Dietrich',
-   prospectId: "5",
-   checked: false},
-   {firstName: 'Glenna',
-   lastName: 'Reichert',
-   prospectId: "6",
-   checked: false}
-]
 function App() {
 
   const [prospects, setProspects] = useState(prospectInfo)
   const [connections, setConnections] = useState([])
+  const [editedProspects, setEditedProspects] = useState([])
 
+  //**********************
+
+  const [{isDragging}, drag] = useDrag({
+    type: "LEFT",
+    collect: monitor => ({
+      isDragging: !!monitor.isDragging()
+    })
+  })
+
+  const[{isOver}, drop] = useDrop({
+    accept: "LEFT",
+    drop: (item, monitor) => {
+      let index = prospects.findIndex(prospect => prospect.prospectId === item.id)
+      // setProspects([
+      //   ...prospects.slice(0, index),
+      //   ...prospects.slice(index+1)
+      // ])
+      setEditedProspects([...editedProspects, {name: item.firstName + ' ' + item.lastName, prospectId: item.id}])
+    },
+    collect: monitor => ({
+      isOver: !!monitor.isOver()
+    })
+  })
+
+  //**********************
 
 
   const handleChange = (event) => {
@@ -62,10 +65,6 @@ function App() {
     setProspects([...prospects.slice(0,index),
     Object.assign({}, prospects[index], {checked: !prospects[index].checked}),
       ...prospects.slice(index+1)])
-  }
-
-  const handleDragOver = (e) => {
-    e.preventDefault()
   }
 
   const combine = () => {
@@ -83,14 +82,21 @@ function App() {
     combinedId = combinedId.replace(/.$/,'')
     combinedName = combinedName.replace(/..$/,'')
 
-    let div = document.createElement("div")
-    let span = document.createElement("span")
-    span.innerText = combinedName
+    let editedProspect = {
+      name: combinedName,
+      prospectId: combinedId,
+    }
 
-    div.setAttribute("class", "dynamic-element prospect-info")
-    div.setAttribute("id",combinedId)
-    div.append(span)
-    document.querySelector("#proposal-work-area__taxable-prospects-combined").append(div)
+    setEditedProspects([...editedProspects, editedProspect])
+
+    // let div = document.createElement("div")
+    // let span = document.createElement("span")
+    // span.innerText = combinedName
+
+    // div.setAttribute("class", "dynamic-element prospect-info")
+    // div.setAttribute("id",combinedId)
+    // div.append(span)
+    // document.querySelector("#proposal-work-area__taxable-prospects-combined").append(div)
 
     let updatedState = []
     prospects.map(prospect => {
@@ -156,16 +162,15 @@ function App() {
 
   return (
     <div className="App">
-      {/* <BrowserRouter>
-        <Route path="/treeExample" component={TreeExample}></Route>
-        <Link to="/treeExample"><button style={buttonStyle}>Tree Example</button></Link>
-      </BrowserRouter> */}
-      <XarrowsExample/>
-      {/* <LineToExample/>
-      <SteppedLineToComponent/> */}
       <div id="proposal-work-area">
         <div id="proposal-work-area__taxable-prospects">
-            {prospects.map((prospect) => {
+          {prospects.map((prospect) => {
+              return (
+                <Prospects prospect={prospect} handleChange={handleChange} drag={drag}/>
+              )
+            })}
+          {/* <Prospects prospects={prospects} onChange={handleChange}/> */}
+            {/* {prospects.map((prospect) => {
               return (
                 <div className={prospect.class ? `${prospect.class} prospect-info` : "prospect-info"} id={prospect.prospectId}>
                   {!prospect.checkbox ?
@@ -176,15 +181,24 @@ function App() {
                   <span>{prospect.lastName}</span>
                 </div>
               )
-            })}
+            })} */}
         </div>
-        <div onDragOver={(e) => handleDragOver} id="proposal-work-area__taxable-prospects-combined">
+        <div id="proposal-work-area__taxable-prospects-combined" ref={drop}>
+          {
+            editedProspects.map((editedProspect) => {
+              return (
+                <div className="dynamic-element prospect-info" id={editedProspect.prospectId}>
+                  <span>{editedProspect.name}</span>
+                </div>
+              )
+            })
+          }
         </div>
-        <div className="proposal-work-area__buttons">
+        {/* <div className="proposal-work-area__buttons">
           <button onClick={combine} button style={buttonStyle}>Combine</button>
           <button onClick={split} button style={buttonStyle}>Split</button>
           <button onClick={reshuffle} button style={buttonStyle}>Reshuffle</button>
-      </div>
+      </div> */}
       {connections.map(connection => {
         return (
           <Xarrow curveness={false} path={"grid"} 
